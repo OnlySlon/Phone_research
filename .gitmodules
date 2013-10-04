@@ -1,0 +1,3 @@
+[submodule "libs/Aho-Corasick"]
+	path = libs/Aho-Corasick
+	url = http://github.com/nasir44/Aho-Corasick-.git
