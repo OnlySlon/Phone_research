@@ -2,6 +2,43 @@
 # License: GPL
 # Owner: Max Vohra
 
+
+# TODO: GSM Fire Code (SACCH)
+# source: http://www.ni69.info/documents/engineering/gsm/doxygen/const__code_8h_source.html
+
+# TODO: A3 Authentication
+# source: http://edipermadi.files.wordpress.com/2008/03/pedagogical_implementation_of_a5_cipher.pdf
+
+# TODO: A8 voice-privacy key generation
+# source http://edipermadi.files.wordpress.com/2008/03/pedagogical_implementation_of_a5_cipher.pdf
+
+# TODO: A5/1 magic constants
+# source:  http://www.scard.org/gsm/a51.html
+'''
+#define R1MASK  0x07FFFF /* 19 bits, numbered 0..18 */
+#define R2MASK  0x3FFFFF /* 22 bits, numbered 0..21 */
+#define R3MASK  0x7FFFFF /* 23 bits, numbered 0..22 */
+
+/* Middle bit of each of the three shift registers, for clock control */
+#define R1MID   0x000100 /* bit 8 */
+#define R2MID   0x000400 /* bit 10 */
+#define R3MID   0x000400 /* bit 10 */
+
+
+/* Feedback taps, for clocking the shift registers.
+ * These correspond to the primitive polynomials
+ * x^19 + x^5 + x^2 + x + 1, x^22 + x + 1,
+ * and x^23 + x^15 + x^2 + x + 1. */
+#define R1TAPS  0x072000 /* bits 18,17,16,13 */
+#define R2TAPS  0x300000 /* bits 21,20 */
+#define R3TAPS  0x700080 /* bits 22,21,20,7 */
+
+/* Output taps, for output generation */
+#define R1OUT   0x040000 /* bit 18 (the high bit) */
+#define R2OUT   0x200000 /* bit 21 (the high bit) */
+#define R3OUT   0x400000 /* bit 22 (the high bit) */
+'''
+
 kasumi_S7 = [
     54,  50, 62, 56, 22, 34, 94, 96, 38,  6, 63, 93,  2, 18,123, 33,
     55, 113, 39,114, 21, 67, 65, 12, 47, 73, 46, 27, 25,111,124, 81,
@@ -336,69 +373,6 @@ algorithms = {
 }
 
 import struct
-import sys
-sys.path.append('libs/Aho-Corasick')
-import AhoCorasick
-
-def findDatas_Aho(s,algos,min_chunk_size=16):
-    #units = ['b','B','h',"H",'i','I','l','L','q','Q']
-    units = ['b','B','h',"H",'i','I','l','L']
-    endian = ['<','>']
-    chunk_level = 1
-
-    matched_algos = []
-    cont_tree = AhoCorasick.AhoCorasickTree()
-
-    largest_block = max([len(algos[x][0]) for x in algos.keys()])
-    while largest_block/chunk_level >= min_chunk_size:
-        start_tree = AhoCorasick.AhoCorasickTree()
-
-        for name in algos:
-            if name in matched_algos:
-                continue
-
-            (dataset,min_unit) = algos[name]
-            chunk_size = len(dataset)/chunk_level
-
-            if chunk_size < min_chunk_size:
-                continue
-
-            for unit in units[units.index(min_unit):]:
-                for bom in endian:
-                    packing = bom+''.join(unit for _tmp in range(chunk_size))
-                    start_chunk = struct.pack(packing,*dataset[0:chunk_size])
-                    start_tree.add_keyword(start_chunk,(name,bom,unit,chunk_size,0))
-
-        start_tree.set_fail_transitions()
-        import pprint
-        pprint.pprint(start_tree.root)
-        pprint.pprint(start_tree.root.__dict__)
-        pprint.pprint(start_tree.root.transition_List[0].transition_List[0].__dict__)
-        sr = start_tree.start_match(s)
-
-        while sr is not None:
-            result = sr.get_match_result().pop()[1]
-            sr = start_tree.next_match(sr)
-
-            (name,bom,unit,chunk_size,x)= result[0]
-            matched_algos.append(result[0])
-
-            dataset = algos[name]
-            packing = bom+''.join(unit for _tmp in range(chunk_size))
-            
-            for x in range(chunk_size,len(dataset),chunk_size):
-                cont_chunk = struct.pack(packing,*dataset[x:x+chunk_size])
-                cont_tree.add_keyword(start_chunk,(name,bom,unit,chunk_size,x))
-            yield result
-
-        chunk_level = chunk_level*2
-
-    cont_tree.set_fail_transitions()
-    sr = cont_tree.start_match(s)
-    while sr is not None:
-        result = sr.get_match_result().pop()[1]
-        sr = cont_tree.next_match(sr)
-        yield result
 
 class Trie(dict):
     def __init__(self,chunk_size=4):
@@ -450,8 +424,6 @@ class Trie(dict):
 
             if c in self:
                 match_buffer.append([self[c],idx,1])
-            if 0 == idx % 0x10000:
-                print hex(idx)
             idx += 1
 
 
@@ -489,28 +461,9 @@ def findDatas(s,algos,chunk_size=16):
         yield ret
 
 
-def findChunks(s,dataset,chunk_size=16,min_unit='b'):
-    units = ['b','B','h',"H",'i','I','l','L','q','Q']
-    start = units.index(min_unit)
-    endian = ['<','>']
-    for x in range(0,len(dataset),chunk_size):
-        for bom in endian:
-            for unit in units[start:]:
-                packing = bom+''.join(unit for x in range(chunk_size))
-    
-                chunk = struct.pack(packing,*dataset[x:x+chunk_size])
-                offset = s.find(chunk)
-                if offset != -1: 
-                    yield '0x%08x: %s' % (offset,chunk.encode('hex'))  
-    
-                chunk = struct.pack(packing,*reversed(dataset[x:x+chunk_size]))
-                offset = s.find(chunk)
-                if offset != -1: 
-                    yield '0x%08x: %s' % (offset,chunk.encode('hex'))  
-
-
 if __name__ == '__main__':
     import mmap
+    import sys
     unit_map = {
         'b':   "int8_t",
         'B':  "uint8_t",
@@ -520,8 +473,8 @@ if __name__ == '__main__':
         'L': "uint32_t",
         'q':  "int64_t",
         'Q': "uint64_t",
-        '<': "le",
-        '>': "be",
+        '<': "little-endian",
+        '>': "big-endian",
     }
     for fn in sys.argv[1:]: 
         fh = open(fn)
@@ -533,5 +486,6 @@ if __name__ == '__main__':
             #print "%s: found chunk of %s" % result
             #print "\t" + result
 
+        fh_mmap.close()
         fh.close()
 
