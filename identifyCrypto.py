@@ -398,6 +398,8 @@ rijndael_T3 = [
 ]
 
 algorithms = {
+    "enc_cave_ibox":        (cave_ibox,'B'),
+    "enc_cave_table":       (cave_table,'B'),
     "enc_kasumi_S7":        (kasumi_S7,'B'),
     "enc_kasumi_S9":        (kasumi_S9,'H'),
     "enc_snow3g_Sq":        (snow3g_Sq,'B'),
