@@ -1,3 +1,9 @@
 [submodule "libs/Aho-Corasick"]
 	path = libs/Aho-Corasick
 	url = http://github.com/nasir44/Aho-Corasick-.git
+[submodule "Tools/GSM/Kraken"]
+	path = Tools/GSM/Kraken
+	url = git://git.srlabs.de/kraken.git
+[submodule "Tools/GSM/Airprobe"]
+	path = Tools/GSM/Airprobe
+	url = git://git.gnumonks.org/airprobe.git

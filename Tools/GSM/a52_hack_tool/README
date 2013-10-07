@@ -1,0 +1,11 @@
+# Security - A5/2 Hack Tool
+
+It's an open secret that the privacy in GSM (Global System for Mobile communication, the standard used in 80% of the world's mobile phones) is compromised. The A5 set of ciphers it uses has been proven incapable of preventing data from being decrypted. The architecture of the standard makes it particularily vulnerable to man-in-the-middle attacks, and since all algorithms share a common key, the system is as weak as its weakest algorithm: A5/2.
+
+The aim of this project, initiated in May 2011 and co-developed with Olivier Benjamin, was to design a concrete and turnkey implementation of a tool simulating an instant ciphertext-only attack on the A5/2 cipher, enventually allowing full GSM communication decryption. Our tool sucessfully cracks the cipher in a few seconds on a personal computer.
+
+Authors:
+ Nicolas Paglieri 
+ Olivier Benjamin
+Site:
+ http://www.ni69.info/security-gsm-en.php
